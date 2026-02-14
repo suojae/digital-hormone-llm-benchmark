@@ -11,7 +11,13 @@ paper/build/
 __pycache__/
 *.pyc
 .venv/
+.venv*/
 venv/
 outputs/
 results.csv
 *.regimes.txt
+harness/outputs/
+harness/results.csv
+harness/figures/
+harness/src/*.egg-info/
+harness/.pytest_cache/

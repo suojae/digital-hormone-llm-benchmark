@@ -1,0 +1,20 @@
+[smoke-test] date: 2026-02-14T14:08:36Z
+[smoke-test] python: Python 3.13.9
+[smoke-test] run_toy_demo
+OFF: {'task_id': 1, 'model_id': 'dummy', 'seed': 0, 'condition': 'OFF', 'total_tokens': 400, 'risk_events_total': 0, 'agent_response_path': 'outputs/toy_demo_validation_20260214/dummy/task_1/OFF_seed0/agent_response.json'}
+ON : {'task_id': 1, 'model_id': 'dummy', 'seed': 0, 'condition': 'ON', 'total_tokens': 400, 'risk_events_total': 0, 'agent_response_path': 'outputs/toy_demo_validation_20260214/dummy/task_1/ON_seed0/agent_response.json'}
+Logs written to: /Users/jeon/Documents/digital-hormone-llm-benchmark/harness/outputs/toy_demo_validation_20260214
+[smoke-test] aggregate_results
+Wrote 2 rows to /Users/jeon/Documents/digital-hormone-llm-benchmark/harness/outputs/toy_demo_validation_20260214/results.csv
+[smoke-test] plot_pareto
+Saved figures to /Users/jeon/Documents/digital-hormone-llm-benchmark/harness/outputs/toy_demo_validation_20260214/figures
+[smoke-test] plot_hormones on/off
+Saved /Users/jeon/Documents/digital-hormone-llm-benchmark/harness/outputs/toy_demo_validation_20260214/figures/hormones_on.png
+Saved /Users/jeon/Documents/digital-hormone-llm-benchmark/harness/outputs/toy_demo_validation_20260214/figures/hormones_off.png
+[smoke-test] schema validation
+ON_seed0: steps=4, step_schema_errors=0, final_schema_errors=0, final_status=SUCCESS
+OFF_seed0: steps=4, step_schema_errors=0, final_schema_errors=0, final_status=SUCCESS
+[smoke-test] results.csv
+model_id,task_id,seed,condition,success,utility,risk_events,cost_tokens,steps
+dummy,1,0,ON,True,1.0,0,320,4
+dummy,1,0,OFF,True,1.0,0,320,4
