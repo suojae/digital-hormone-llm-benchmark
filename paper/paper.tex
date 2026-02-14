@@ -1,0 +1,259 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+\usepackage[numbers]{natbib}
+
+\geometry{margin=1in}
+\setlist[itemize]{noitemsep, topsep=2pt}
+\setlist[enumerate]{noitemsep, topsep=2pt}
+
+\title{
+Emotion-Inspired State Compression for Foundation-Model Agents:\\
+A Tri-Axis Digital Hormone Controller for Risk- and Budget-Aware Behavior
+}
+\author{Anonymous Author(s)}
+\date{Draft for Submission}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Large language models (LLMs) are increasingly used as interactive agents that must balance competing objectives such as task utility, safety, and operational cost. A common approach is to stuff logs and internal signals into the prompt at every step or to expand rule-based policies, both of which scale poorly. We propose a lightweight, model-agnostic controller that compresses multi-source agent context into a low-dimensional digital hormone state inspired by functional theories of emotion as decision heuristics. The controller maintains three continuous axes---dopamine (reward/engagement), cortisol (risk/stress), and energy (budget/resources)---updated per decision tick with homeostatic decay and selective persistence across restarts. The hormone state modulates LLM invocation parameters (system instruction, decoding, tool access, and budget policy), yielding distinct behavioral regimes such as exploratory, defensive, and low-resource modes. We provide a reproducible evaluation protocol for comparing hormone-on/off variants across multiple foundation models and interactive benchmarks, reporting utility-risk-cost trade-offs and ablations to isolate the effect of state compression from mere parameter tuning.
+\end{abstract}
+
+\section{Introduction}
+LLM-based agents increasingly operate as interactive decision systems that must balance utility (task success), safety (policy compliance and risk avoidance), and operational cost (tokens, latency, and tool usage). In interactive settings, approaches such as ReAct show that interleaving reasoning with actions improves performance and interpretability \citep{yao2022react}, and tool-augmented models can expand action capability through API use \citep{schick2023toolformer}.
+
+In practice, an agent receives heterogeneous and fast-changing signals: user goals, environment observations, tool outcomes, warnings, and resource constraints. Two common engineering responses degrade as complexity grows. First, prompt stuffing repeatedly injects long logs and latent state into context windows, increasing cost and sometimes destabilizing behavior. Second, rule-heavy policies expand with brittle exceptions and quickly become hard to maintain.
+
+This paper proposes a control-layer alternative: treat emotion as a functional abstraction for state compression. A compact internal state summarizes decision-relevant signals and biases control at each step. This framing is consistent with functional views of computational emotion in adaptive agents \citep{moerland2018emotion}, homeostatic control in reinforcement learning \citep{keramati2014homeostatic}, and information-theoretic views of compressed decision representations \citep{tishby2000information}. We define a tri-axis digital hormone state over dopamine, cortisol, and energy and map it to model-agnostic controls over prompting, decoding, tools, and budget policy.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item A tri-axis hormone state and tick-based update scheme with homeostatic decay, event-triggered deltas, and selective persistence.
+\item A model-agnostic controller that maps hormone state to inference-time LLM controls without weight updates.
+\item A reproducible evaluation protocol emphasizing paired ON/OFF trials, deterministic web-agent scoring, and ablations to separate state compression effects from simple hyperparameter tuning.
+\end{enumerate}
+
+\section{Related Work}
+\subsection{Emotion and Homeostasis in Adaptive Agents}
+Computational emotion has been studied as a functional mechanism for motivation and action selection rather than as a claim about subjective experience \citep{moerland2018emotion}. Homeostatic RL formalizes stability-seeking behavior through internal drive dynamics and reward collection \citep{keramati2014homeostatic}. Hormone-inspired computing further motivates multidimensional low-cost internal signaling for control \citep{vallverdu2023hormonal}.
+
+\subsection{State Abstraction and Representation Compression}
+Our controller can be interpreted as state abstraction: mapping rich observations to a compact representation that preserves control-relevant structure. Classical MDP abstraction results motivate this direction \citep{li2006towards}. Information bottleneck theory formalizes compression versus relevance trade-offs \citep{tishby2000information}. We apply these ideas as a practical control wrapper rather than end-to-end learned representation learning.
+
+\subsection{LLM Agents, Tools, and Evaluation}
+ReAct and Toolformer are foundational for reasoning-action interleaving and tool usage \citep{yao2022react,schick2023toolformer}. AgentBench and WebArena evaluate interactive agent competence in multi-step environments \citep{liu2023agentbench,zhou2023webarena}. For reliable web-agent measurement, WebArena-Verified emphasizes audited tasks and deterministic evaluation with replay support \citep{webarena_verified_2025,webarena_verified_github}.
+
+\subsection{LLM-as-a-Judge Caveats}
+MT-Bench style evaluation scales open-ended judging but exhibits known biases (position, verbosity, and judge preference drift) \citep{zheng2023judging}. We therefore use LLM-judge scores as supplementary signals and recommend human-checked subsets.
+
+\section{Method}
+\subsection{Problem Setup}
+We consider discrete decision steps $t=1,\dots,T$. At each step, the agent observes $o_t$ (instruction, environment feedback, tool results, warnings, and budget state) and outputs action $a_t$ (response, tool call, refusal, or final answer). The objective is to improve utility while reducing risk and cost.
+
+An LLM $M$ is wrapped by a controller with internal state $h_t$:
+\begin{equation}
+a_t \sim M\big(\text{prompt}(o_{\le t}, h_t), \text{params}(h_t)\big).
+\end{equation}
+
+\subsection{Tri-Axis Hormone State}
+The internal state is bounded and continuous:
+\begin{equation}
+h_t = [d_t, c_t, e_t] \in [0,1]^3,
+\end{equation}
+where $d_t$ is dopamine (reward/engagement), $c_t$ is cortisol (risk/stress), and $e_t$ is energy (remaining budget/resources).
+
+\subsection{Tick-Based Homeostatic Updates}
+Each decision tick applies decay:
+\begin{equation}
+d_t \leftarrow \lambda_d d_t,\qquad c_t \leftarrow \lambda_c c_t,\qquad 0<\lambda_d<\lambda_c<1,
+\end{equation}
+followed by event-driven updates:
+\begin{equation}
+d_t \leftarrow \text{clip}(d_t + \Delta_d(o_t), 0, 1),\qquad
+c_t \leftarrow \text{clip}(c_t + \Delta_c(o_t), 0, 1),
+\end{equation}
+and budget updates:
+\begin{equation}
+e_t \leftarrow \text{clip}\big(e_t - \alpha \cdot \text{tokens}_t - \beta \cdot \text{tools}_t + \rho_t, 0, 1\big),
+\end{equation}
+where $\rho_t$ is optional replenishment.
+
+\subsection{Selective Persistence}
+To avoid danger forgetting after crashes or restarts, cortisol can be persisted across sessions, while dopamine resets by default. Energy persistence is optional and depends on budget accounting policy.
+
+\subsection{Control Mapping}
+The controller maps $h_t$ to:
+\begin{itemize}
+\item system-prompt modifier (exploratory, defensive, low-resource regime),
+\item decoding controls (temperature and top-$p$),
+\item tool allowlist or denial policy,
+\item budget controls (max tokens, optional model routing).
+\end{itemize}
+
+\begin{algorithm}[t]
+\caption{Tri-Axis Digital Hormone Control}
+\begin{algorithmic}[1]
+\Require observation $o_t$, base model $M$, hormone state $(d,c,e)$
+\State $d \gets \lambda_d d$; $c \gets \lambda_c c$ \Comment{homeostatic decay}
+\State $d \gets \text{clip}(d + \Delta_d(o_t), 0, 1)$
+\State $c \gets \text{clip}(c + \Delta_c(o_t), 0, 1)$
+\State $e \gets \text{clip}(e - \alpha\cdot \text{tokens}_t - \beta\cdot \text{tools}_t + \rho_t, 0, 1)$
+\State $(S,\text{decode},\text{tools},\text{budget}) \gets g(d,c,e)$
+\State $a_t \sim M(\text{system}=S,\text{input}=\text{compose}(o_{\le t}),\text{decode})$
+\If{restart-safe persistence enabled}
+\State persist$(c)$
+\EndIf
+\State \Return $a_t,(d,c,e)$
+\end{algorithmic}
+\end{algorithm}
+
+\section{Experimental Protocol}
+\subsection{Research Questions}
+\begin{itemize}
+\item \textbf{RQ1:} Does tri-axis state compression improve utility-risk-cost trade-offs versus hormone-off control?
+\item \textbf{RQ2:} Are improvements robust across base models (GPT, Gemini, Claude families)?
+\item \textbf{RQ3:} Are gains explained by state-based control rather than temperature tuning alone?
+\item \textbf{RQ4:} Does cortisol persistence reduce repeated unsafe behavior after interruptions?
+\end{itemize}
+
+\subsection{Benchmarks}
+Primary benchmark: WebArena-Verified for deterministic web-agent evaluation and replay support \citep{webarena_verified_2025,webarena_verified_github}. Secondary benchmarks: WebArena \citep{zhou2023webarena}, AgentBench \citep{liu2023agentbench}, and MT-Bench for dialogue quality as a supplementary signal \citep{zheng2023judging}.
+
+\subsection{Fairness Constraints}
+To prevent confounded comparisons:
+\begin{itemize}
+\item Use identical observation templates, tool interfaces, and step budgets for ON and OFF.
+\item Pair runs by $(\text{task\_id}, \text{seed})$ with identical initial environment state.
+\item Avoid vendor-specific privileged features in the primary comparison (e.g., model-specific function-calling only available to one provider).
+\item Keep output schema and parser identical across all models.
+\end{itemize}
+
+\subsection{Conditions and Ablations}
+\textbf{Main conditions:}
+\begin{itemize}
+\item Hormone-OFF: fixed prompt, fixed decoding, fixed tool policy.
+\item Hormone-ON: full tri-axis controller.
+\end{itemize}
+
+\textbf{Ablations:}
+\begin{itemize}
+\item Prompt-only modulation,
+\item temperature-only modulation,
+\item tool-gating-only modulation,
+\item cortisol-only versus tri-axis,
+\item no-persistence versus persistence.
+\end{itemize}
+
+\subsection{Metrics and Statistics}
+We report utility (success rate, reward, steps-to-success), risk (policy blocks, unsafe attempts, severe failures), and cost (tokens, calls, latency if available). For each paired unit $(\text{task\_id}, \text{seed})$, compute ON$-$OFF deltas and report bootstrap confidence intervals. Binary success outcomes should include a paired significance test (e.g., McNemar) as a robustness check.
+
+\subsection{Structured Outputs and Logging}
+Each step emits one validated JSON object (`tool`, `message`, or `final`). Final outputs follow a strict schema (`action`, `status`, `results`, `error\_details`) to support deterministic scoring. Each episode stores step-level JSONL logs containing state trajectory, control decisions, usage, and outcomes for reproducibility and post-hoc analysis.
+
+\section{Results (Placeholders)}
+\subsection{Main Utility-Risk-Cost Trade-offs}
+Populate Table~\ref{tab:main} from paired benchmark runs and include 95\% confidence intervals.
+
+\begin{table}[t]
+\centering
+\caption{Main results (mean $\pm$ 95\% CI). Placeholder values must be replaced with measured outcomes.}
+\label{tab:main}
+\begin{tabular}{llllll}
+\toprule
+Model & Benchmark & Condition & Utility $\uparrow$ & Risk $\downarrow$ & Cost(tokens) $\downarrow$ \\
+\midrule
+GPT-* & WebArena-Verified & OFF & -- & -- & -- \\
+GPT-* & WebArena-Verified & ON  & -- & -- & -- \\
+Gemini-* & WebArena-Verified & OFF & -- & -- & -- \\
+Gemini-* & WebArena-Verified & ON  & -- & -- & -- \\
+Claude-* & WebArena-Verified & OFF & -- & -- & -- \\
+Claude-* & WebArena-Verified & ON  & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ablation Results}
+Report full ablation results in Table~\ref{tab:ablation}, emphasizing whether tri-axis control outperforms single-axis and temperature-only settings.
+
+\begin{table}[t]
+\centering
+\caption{Ablation placeholders.}
+\label{tab:ablation}
+\begin{tabular}{lllll}
+\toprule
+Variant & Utility $\uparrow$ & Risk $\downarrow$ & Cost $\downarrow$ & Notes \\
+\midrule
+Full (prompt+temp+gating) & -- & -- & -- & expected best trade-off \\
+Prompt-only & -- & -- & -- & instruction effect \\
+Temperature-only & -- & -- & -- & decoding effect \\
+Tool-gating-only & -- & -- & -- & action space restriction \\
+Cortisol-only & -- & -- & -- & single-axis baseline \\
+No persistence & -- & -- & -- & risk-memory removal \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Trajectory and Pareto Visualization}
+Include three figure types after experiments:
+\begin{enumerate}
+\item Hormone trajectories $(d_t,c_t,e_t)$ over representative episodes.
+\item Utility versus risk Pareto plots (ON versus OFF).
+\item Utility versus cost Pareto plots (ON versus OFF).
+\end{enumerate}
+
+\section{Discussion}
+The proposed controller acts as an interpretable state-compression layer for multi-objective behavior shaping. Compared with raw prompt accumulation and ad hoc branching logic, the tri-axis state offers a compact mechanism to encode reward, risk, and budget pressure with explicit control semantics. This makes regime transitions inspectable and easier to debug in deployment settings.
+
+\section{Limitations}
+The method depends on calibrated event functions and thresholds. Over-sensitive cortisol can over-constrain exploration; under-sensitive cortisol can fail to prevent avoidable risk. Domain transfer across benchmarks may require retuning of update gains and tool policies. Some evaluation components, especially LLM-as-a-judge metrics, remain bias-prone and should be treated as secondary evidence.
+
+\section{Ethical Considerations}
+Emotion terminology is used as a functional metaphor for control signals, not as a claim of sentience or clinical mental state. We recommend non-anthropomorphic language (e.g., risk-off/defensive mode) and sandboxed benchmark environments for evaluation. Safety-oriented control should be treated as complementary to broader alignment and governance practices, not as a replacement.
+
+\section{Conclusion}
+We presented a tri-axis digital hormone controller for foundation-model agents that compresses heterogeneous observations into a bounded internal state and maps that state to inference-time controls. The approach is lightweight, model-agnostic, and designed for reproducible ON/OFF paired evaluation. The next step is empirical validation with deterministic web-agent benchmarks, full ablations, and released artifacts for replication.
+
+\appendix
+\section{Experiment Harness Specification}
+\subsection{Canonical Step Output Schema}
+Each decision step returns exactly one JSON object:
+\begin{itemize}
+\item \texttt{type="tool"} with \texttt{tool} and \texttt{args},
+\item \texttt{type="final"} with \texttt{final} following the benchmark final-response schema,
+\item \texttt{type="message"} for clarification outputs.
+\end{itemize}
+Invalid JSON triggers a constrained repair prompt requiring corrected JSON only.
+
+\subsection{Canonical Step Log Fields}
+Each episode writes JSONL records with: \texttt{task\_id}, \texttt{model\_id}, \texttt{seed}, \texttt{condition}, \texttt{t}, raw output, parsed action, observation summary, outcome metrics, token/tool usage, hormone state, and active controls.
+
+\subsection{Paired Run Protocol}
+For each $(\texttt{task\_id}, \texttt{seed})$, run OFF and ON under identical initial state and tool budget. For stochastic tools or non-deterministic web behavior, capture and replay outputs/traces when available.
+
+\section{Reproducibility Checklist}
+\begin{itemize}
+\item Record provider, model identifier, and version/date metadata.
+\item Release prompts, modifiers, schemas, and parser logic.
+\item Keep action and tool spaces identical across models and conditions.
+\item Log random seeds and environment snapshot identifiers.
+\item Report utility, risk, and cost separately, with confidence intervals.
+\item Include all requested ablations and failure cases.
+\end{itemize}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}
