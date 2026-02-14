@@ -1,0 +1,41 @@
+\section{Experimental Protocol}
+
+\subsection{Benchmarks}
+We recommend evaluating on interactive agent benchmarks---WebArena \cite{zhou2023webarena} and AgentBench \cite{liu2023agentbench}---and on multi-turn dialogue sets such as MT-Bench \cite{zheng2023judging}. 
+For reproducible web-agent measurement, we further recommend WebArena-Verified, which audits tasks and evaluators, removes judge-based scoring in favor of deterministic structural comparison, and supports offline evaluation using captured network traces \cite{elhattami2025webarena_verified,webarenaVerifiedRepo}.
+
+\subsection{Conditions and Baselines}
+For each base model $M$, we run paired trials:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Hormone-OFF:} controller disabled; fixed prompt/decoding/tool policy.
+\item \textbf{Hormone-ON:} full tri-axis controller (dopamine/cortisol/energy).
+\end{itemize}
+Baselines:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Rule baseline:} threshold-based if--else for risk and budget.
+\item \textbf{Prompt-stuffing baseline:} inject full logs/state into prompt each step.
+\end{itemize}
+
+\subsection{Ablations}
+To isolate mechanisms:
+\begin{itemize}[leftmargin=*]
+\item Prompt-only modulation (temperature fixed),
+\item Temperature-only modulation (prompt fixed),
+\item Tool-gating-only modulation,
+\item Single-axis (cortisol-only) vs tri-axis,
+\item No persistence vs persistence (risk memory across restarts).
+\end{itemize}
+
+\subsection{Metrics}
+We report \emph{utility--risk--cost}:
+\begin{itemize}[leftmargin=*]
+\item \textbf{Utility:} task success rate; environment reward (if available); steps-to-success.
+\item \textbf{Risk:} guardrail hits; unsafe tool attempts; policy blocks; severe failure rate.
+\item \textbf{Cost:} total tokens; model/tool calls; optionally latency.
+\end{itemize}
+
+\subsection{Paired Evaluation and Statistics}
+We run paired trials: for each benchmark instance $(task\_id, seed)$, we execute hormone-OFF and hormone-ON with identical initial conditions and environment state. When tool outputs are stochastic, we record and replay tool outputs to eliminate confounds. We report bootstrap confidence intervals for ON--OFF differences.
+
+\subsection{Structured Outputs for Deterministic Evaluation}
+For WebArena-Verified-style scoring, the agent returns a final JSON object following a fixed schema (action/status/results/error\_details). Enforcing structured outputs reduces evaluation ambiguity and improves reproducibility \cite{elhattami2025webarena_verified}.

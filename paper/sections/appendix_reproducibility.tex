@@ -1,0 +1,14 @@
+\section{Reproducibility Checklist (Appendix)}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Model identifiers and versions:} record provider, model name, and (when available) a version/date identifier for each run.
+\item \textbf{Prompts and schemas:} release the exact base system prompt, controller modifiers, and JSON schemas used for step outputs and final responses.
+\item \textbf{Action space and tools:} keep tool/action space identical across models and conditions; log any denied actions and tool errors.
+\item \textbf{Random seeds:} use paired seeds for OFF/ON; log seeds for each run.
+\item \textbf{Environment snapshots:} for interactive web environments, reset to a consistent snapshot between paired runs.
+\item \textbf{Offline replay (recommended):} capture network traces (HAR) to enable offline evaluation and reduce environment drift \cite{elhattami2025webarena_verified,webarenaVerifiedRepo}.
+\item \textbf{Hyperparameters:} report hormone decay factors, event gains, thresholds (including hysteresis), and budgeting assumptions.
+\item \textbf{Evaluation metrics:} report utility, risk, and cost separately; provide Pareto plots and ON--OFF confidence intervals.
+\item \textbf{Ablations:} include prompt-only, temperature-only, tool-gating-only, single-axis vs tri-axis, and persistence vs no persistence.
+\item \textbf{Failure cases:} include qualitative examples where hormone control hurts utility or becomes overly conservative.
+\end{itemize}

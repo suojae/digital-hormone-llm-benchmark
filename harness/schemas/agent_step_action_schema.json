@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AgentStepAction",
+  "description": "One step output from the agent. Either a tool call or a final response.",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "tool",
+        "final",
+        "message"
+      ]
+    },
+    "tool": {
+      "type": "string",
+      "description": "Tool name, e.g., browser.goto"
+    },
+    "args": {
+      "type": "object",
+      "description": "Tool arguments"
+    },
+    "message": {
+      "type": "string",
+      "description": "Natural language message to user or to request clarification"
+    },
+    "final": {
+      "type": "object",
+      "description": "Final agent_response JSON for benchmark evaluation"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "tool"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "tool",
+          "args"
+        ],
+        "properties": {
+          "final": {
+            "not": {}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "final"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "final"
+        ],
+        "properties": {
+          "tool": {
+            "not": {}
+          },
+          "args": {
+            "not": {}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "message"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "tool": {
+            "not": {}
+          },
+          "args": {
+            "not": {}
+          },
+          "final": {
+            "not": {}
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

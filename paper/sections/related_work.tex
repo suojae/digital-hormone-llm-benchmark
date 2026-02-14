@@ -1,0 +1,13 @@
+\section{Related Work}
+
+\subsection{Emotion and Homeostasis in Adaptive Agents}
+Computational emotion models in RL agents have been studied as functional mechanisms that influence motivation and action selection rather than as claims of subjective experience \cite{moerland2017emotion}. Homeostatic RL formalizes internal stability objectives and integrates them with reward-seeking behavior \cite{keramati2014homeostatic}. Our work adopts these functional ideas as a lightweight control layer for LLM agents.
+
+\subsection{State Abstraction and Representation Compression}
+Our controller can be viewed as an instance of state abstraction: mapping complex observations into a lower-dimensional representation that preserves decision-relevant structure. Early work developed theoretical foundations for state abstraction in MDPs \cite{li2006stateabstraction}. From an information-theoretic perspective, the information bottleneck method formalizes the trade-off between compressing an input and retaining task-relevant information \cite{tishby2000infobottleneck}. While our work does not learn representations end-to-end, these perspectives motivate why a small internal state can serve as an efficient control signal for multi-objective agents.
+
+\subsection{Tool-Augmented LLM Agents and Benchmarks}
+ReAct interleaves reasoning traces and actions for interactive tasks \cite{yao2022react}. Toolformer demonstrates learning when and how to call external tools \cite{schick2023toolformer}. Benchmarks such as AgentBench \cite{liu2023agentbench} and WebArena \cite{zhou2023webarena} provide interactive environments to evaluate LLM agents beyond static NLP tasks. WebArena-Verified improves the reliability of WebArena-style evaluation by auditing tasks/evaluators and enabling deterministic scoring and offline replay \cite{elhattami2025webarena_verified}.
+
+\subsection{Evaluation with LLM Judges}
+MT-Bench and Chatbot Arena popularized scalable LLM-as-a-judge evaluation, while documenting known biases such as position and verbosity effects \cite{zheng2023judging}. We use LLM judges as a supplementary metric and recommend a human-evaluated subset when feasible.

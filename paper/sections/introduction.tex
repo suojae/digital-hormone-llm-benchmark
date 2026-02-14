@@ -1,0 +1,15 @@
+\section{Introduction}
+
+LLM-based agents increasingly operate as \emph{interactive decision systems} that must balance competing objectives---utility (task success), safety (policy compliance and risk avoidance), and operational cost (tokens, latency, tool usage). In interactive settings, approaches such as ReAct demonstrate that interleaving reasoning and actions can improve performance and interpretability \cite{yao2022react}, while tool augmentation expands agent capabilities by enabling API calls \cite{schick2023toolformer}.
+
+In practice, an agent faces heterogeneous, fast-changing signals: user goals, system warnings, tool outcomes, resource limits, and environment feedback. Two common engineering strategies scale poorly. First, \emph{prompt stuffing} repeatedly injects long logs and state into the context, increasing token cost and potentially destabilizing behavior. Second, rule-based policies add branching logic for each exception, suffering from combinatorial explosion as constraints grow.
+
+We propose a control layer that treats ``emotion'' as a \emph{functional abstraction}: a low-dimensional internal state that \emph{compresses} diverse signals into a compact vector used to bias decision making. This design is consistent with functional perspectives of computational emotion in RL agents \cite{moerland2017emotion}, and can also be interpreted as a form of \emph{state abstraction}---mapping rich observations to a smaller internal state that preserves decision-relevant information \cite{li2006stateabstraction}. Conceptually, our approach is aligned with information-theoretic views where representations trade off compression and task-relevant information \cite{tishby2000infobottleneck}.
+
+Following these perspectives, we design a tri-axis ``digital hormone'' state capturing reward, risk, and resources. Inspired by homeostatic RL \cite{keramati2014homeostatic}, we update hormones per decision tick using decay and event-triggered deltas, and selectively persist risk memory across restarts to prevent ``danger forgetting.''
+
+\paragraph{Contributions.} We contribute:
+(i) a tri-axis hormone state and tick-based update scheme with selective persistence;
+(ii) a model-agnostic mapping from hormone state to LLM invocation parameters (prompt, decoding, tool gating, and budget policy);
+and (iii) a reproducible evaluation protocol for multi-objective trade-offs on interactive benchmarks (WebArena \cite{zhou2023webarena}, AgentBench \cite{liu2023agentbench}) and multi-turn dialogue evaluation (MT-Bench \cite{zheng2023judging}). 
+To reduce evaluation noise and judge bias in web-agent tasks, we recommend deterministic scoring and offline replay using WebArena-Verified \cite{elhattami2025webarena_verified}.

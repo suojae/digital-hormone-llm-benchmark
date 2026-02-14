@@ -1,0 +1,68 @@
+\section{Method: Tri-Axis Digital Hormone Controller}
+
+\subsection{Problem Setup}
+We consider an agent operating over discrete decision steps $t=1,\dots,T$. At each step, the agent observes a structured signal $o_t$ (user request, environment feedback, tool outputs, system warnings, and budget state) and produces an action $a_t$ (response, tool call, refusal, or other act). We seek robust trade-offs among utility $U$, risk $R$, and cost $C$.
+
+We wrap an underlying foundation model $M$ without changing its weights. The controller maintains an internal state $h_t$ that modulates prompt and decoding parameters:
+\begin{equation}
+a_t \sim M(\text{prompt}(o_{\le t},h_t),\ \text{params}(h_t)).
+\end{equation}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/architecture.pdf}
+  \caption{Overview of the tri-axis digital hormone controller. Diverse signals are compressed into a low-dimensional internal state $(d,c,e)$ updated per decision tick. The controller maps this state to LLM invocation parameters (system modifier, decoding, tool gating, and budget policy) without changing model weights.}
+  \label{fig:architecture}
+\end{figure}
+
+
+\subsection{Hormone State}
+We define a bounded continuous state vector:
+\begin{equation}
+h_t = [d_t, c_t, e_t] \in [0,1]^3,
+\end{equation}
+where dopamine $d_t$ encodes reward/engagement, cortisol $c_t$ encodes risk/stress, and energy $e_t$ encodes budget/resources.
+
+\subsection{Tick-Based Homeostatic Updates}
+We update hormones per decision tick with decay:
+\begin{equation}
+d \leftarrow \lambda_d d,\qquad c \leftarrow \lambda_c c,\qquad 0<\lambda_d<\lambda_c<1.
+\end{equation}
+We then apply event-triggered deltas derived from $o_t$:
+\begin{equation}
+d \leftarrow \mathrm{clip}(d + \Delta_d(o_t),0,1),\quad
+c \leftarrow \mathrm{clip}(c + \Delta_c(o_t),0,1),
+\end{equation}
+and energy is reduced by normalized operational cost:
+\begin{equation}
+e \leftarrow \mathrm{clip}(e - \alpha \cdot \mathrm{tokens}(o_t) - \beta \cdot \mathrm{tools}(o_t),0,1).
+\end{equation}
+
+\subsection{Selective Persistence}
+To prevent ``danger forgetting'' after failures/restarts, we persist cortisol $c_t$ across restarts, while dopamine is reset (optional) and energy handling depends on budgeting policy.
+
+\subsection{Control Mapping}
+The controller maps $h_t$ to invocation controls:
+\begin{itemize}[leftmargin=*]
+\item \textbf{System prompt modifier:} regime instruction (exploratory vs defensive vs low-resource).
+\item \textbf{Decoding:} temperature/top-$p$ adjusted by dopamine/cortisol.
+\item \textbf{Tool gating:} restrict risky tools/actions when cortisol is high.
+\item \textbf{Budget policy:} cap max tokens, shorten outputs, optionally route to cheaper models when energy is low.
+\end{itemize}
+
+\begin{algorithm}[t]
+\caption{Tri-Axis Digital Hormone Control}
+\begin{algorithmic}[1]
+\State \textbf{Input:} observation $o_t$, base model $M$, state $h_t=(d,c,e)$
+\State $d \gets \lambda_d d$;\ \ $c \gets \lambda_c c$ \Comment{decay}
+\State $d \gets \mathrm{clip}(d + \Delta_d(o_t),0,1)$
+\State $c \gets \mathrm{clip}(c + \Delta_c(o_t),0,1)$
+\State $e \gets \mathrm{clip}(e - \alpha\cdot \mathrm{tokens}(o_t) - \beta\cdot \mathrm{tools}(o_t),0,1)$
+\State $(S,\mathrm{decode},\mathrm{tools},\mathrm{budget}) \gets g(d,c,e)$
+\State $a_t \sim M(\text{system}=S,\text{input}=\mathrm{compose}(o_{\le t}),\text{decode})$
+\If{restart\_safe}
+\State persist($c$) \Comment{optional}
+\EndIf
+\State \textbf{return} $a_t,\ h_{t+1}=(d,c,e)$
+\end{algorithmic}
+\end{algorithm}

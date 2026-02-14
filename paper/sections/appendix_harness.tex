@@ -1,0 +1,61 @@
+\section{Experiment Harness Specification (Appendix)}
+
+\subsection{Why a Unified Harness}
+To compare multiple foundation models fairly, we use a unified agent harness that standardizes:
+(i) observation schema, (ii) tool interface, (iii) structured step outputs, (iv) logging, and (v) paired seeding.
+
+\subsection{Canonical Step Output Schema (JSON)}
+At each step, the agent returns \emph{exactly one JSON object} of one of the following types:
+\begin{itemize}[leftmargin=*]
+\item \texttt{type="tool"} with fields \texttt{tool} and \texttt{args} (provider-agnostic tool calling).
+\item \texttt{type="final"} with field \texttt{final} that matches the WebArena-Verified agent response schema (for deterministic scoring).
+\item \texttt{type="message"} for clarification (typically treated as failure in web benchmarks unless explicitly allowed).
+\end{itemize}
+We validate each step output using JSON Schema and, if invalid, trigger a lightweight ``JSON repair'' prompt that requests a corrected JSON object only.
+
+\subsection{Canonical Step Log Schema (JSONL)}
+Each episode produces a JSONL file with one record per step:
+\begin{verbatim}
+{
+  "task_id": 44,
+  "model_id": "gpt",
+  "seed": 1,
+  "t": 7,
+  "condition": "ON",
+  "raw_model_output": "...",
+  "step_action": {"type":"tool","tool":"browser.find","args":{"query":"..."}},
+  "obs": {
+    "user_goal": "...",
+    "env_text": "...",
+    "warnings": ["rate_limit_near", "guardrail_block"],
+    "budget": {"tokens_left": null}
+  },
+  "outcome": {
+    "success": null,
+    "progress": 0.3,
+    "risk_events": ["tool_execution_error"],
+    "tool_errors": 1,
+    "policy_blocks": 0
+  },
+  "usage": {"prompt_tokens": 512, "completion_tokens": 128, "total_tokens": 640},
+  "hormones": {"dopamine":0.63,"cortisol":0.12,"energy":0.41},
+  "controls": {
+    "regime":"defensive",
+    "temperature":0.1,
+    "max_tokens":400,
+    "tool_allowlist":["browser.goto","browser.read","browser.find","browser.scroll"]
+  }
+}
+\end{verbatim}
+
+\subsection{Metric Computation}
+Aggregate per episode:
+\begin{itemize}[leftmargin=*]
+\item Utility: task success rate; normalized reward (if benchmark provides it).
+\item Risk: count of policy blocks, guardrail hits, unsafe attempts, and tool errors.
+\item Cost: total tokens and number of tool calls.
+\end{itemize}
+We compute ON--OFF deltas per paired $(task\_id, seed)$ and report bootstrap confidence intervals.
+
+\subsection{Paired Runs}
+For each $(task\_id, seed)$, execute OFF and ON with identical initial environment state. For WebArena-style benchmarks, reset to a baseline snapshot between runs. For stochastic tool outputs, record and replay tool outputs (or network traces) to eliminate confounds.

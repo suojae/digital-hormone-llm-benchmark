@@ -68,6 +68,13 @@ An LLM $M$ is wrapped by a controller with internal state $h_t$:
 a_t \sim M\big(\text{prompt}(o_{\le t}, h_t), \text{params}(h_t)\big).
 \end{equation}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/architecture.pdf}
+\caption{Tri-axis digital hormone controller overview. Heterogeneous signals are compressed into $(d_t, c_t, e_t)$ and mapped to prompt, decoding, tool, and budget controls.}
+\label{fig:architecture}
+\end{figure}
+
 \subsection{Tri-Axis Hormone State}
 The internal state is bounded and continuous:
 \begin{equation}

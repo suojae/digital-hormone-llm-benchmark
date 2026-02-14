@@ -1,0 +1,53 @@
+
+# Experiment configuration (example)
+# Goal: run paired hormone OFF vs ON across multiple base models under identical tasks+seeds.
+
+experiment:
+  benchmark: webarena_verified
+  task_ids: [1, 2, 3]          # replace with WebArena-Verified task IDs
+  paired_seeds: [0, 1, 2]
+  step_budget: 40
+  output_dir: outputs/webarena_verified
+
+# Base models (adapters are placeholders; implement SDK calls)
+models:
+  - id: gpt
+    name: gpt-*
+    provider: openai
+    adapter_class: hormone_harness.adapters.openai.OpenAIChatAdapter
+  - id: gemini
+    name: gemini-*
+    provider: google
+    adapter_class: hormone_harness.adapters.google.GeminiAdapter
+  - id: claude
+    name: claude-*
+    provider: anthropic
+    adapter_class: hormone_harness.adapters.anthropic.AnthropicAdapter
+
+controller:
+  persist_path: memory/hormones.json
+  persist_cortisol_only: true
+  reset_dopamine_on_load: true
+  reset_energy_on_load: false
+
+  # Hormone dynamics (recommend tuning only after a pilot run)
+  config:
+    decay_dopamine: 0.90
+    decay_cortisol: 0.98
+    k_reward: 0.12
+    k_risk: 0.18
+
+    w_warning: 0.10
+    w_risk_event: 0.15
+    w_tool_error: 0.20
+    w_policy_block: 0.35
+
+    token_budget: 200000
+    k_token_cost: 1.0
+
+    defensive_enter: 0.80
+    defensive_exit: 0.60
+    exploratory_enter: 0.75
+    exploratory_exit: 0.55
+    low_energy_enter: 0.20
+    low_energy_exit: 0.30

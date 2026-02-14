@@ -8,3 +8,10 @@ paper/build/
 *.out
 *.toc
 *.synctex.gz
+__pycache__/
+*.pyc
+.venv/
+venv/
+outputs/
+results.csv
+*.regimes.txt
